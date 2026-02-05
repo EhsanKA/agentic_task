@@ -1,0 +1,174 @@
+{
+  "entity_resolution": {
+    "authors": {
+      "John Smith": {
+        "id": "auth_001",
+        "all_variations": [
+          "John Smith",
+          "J. Smith",
+          "John A. Smith",
+          "J. A. Smith",
+          "Smith, John"
+        ]
+      },
+      "Maria Garcia": {
+        "id": "auth_002",
+        "all_variations": [
+          "Maria Garcia",
+          "M. Garcia",
+          "Maria L. Garcia",
+          "Garcia, Maria",
+          "M. L. Garcia"
+        ]
+      },
+      "Wei Zhang": {
+        "id": "auth_003",
+        "all_variations": [
+          "Wei Zhang",
+          "W. Zhang",
+          "Wei W. Zhang",
+          "Zhang, Wei",
+          "Zhang Wei"
+        ]
+      },
+      "Emily Johnson": {
+        "id": "auth_004",
+        "all_variations": [
+          "Emily Johnson",
+          "E. Johnson",
+          "Emily R. Johnson",
+          "Johnson, Emily",
+          "E. R. Johnson"
+        ]
+      },
+      "Ahmed Hassan": {
+        "id": "auth_005",
+        "all_variations": [
+          "Ahmed Hassan",
+          "A. Hassan",
+          "Ahmed M. Hassan",
+          "Hassan, Ahmed",
+          "A. M. Hassan"
+        ]
+      },
+      "Sarah Williams": {
+        "id": "auth_006",
+        "all_variations": [
+          "Sarah Williams",
+          "S. Williams",
+          "Sarah K. Williams",
+          "Williams, Sarah",
+          "S. K. Williams"
+        ]
+      },
+      "Yuki Tanaka": {
+        "id": "auth_007",
+        "all_variations": [
+          "Yuki Tanaka",
+          "Y. Tanaka",
+          "Yuki S. Tanaka",
+          "Tanaka, Yuki",
+          "Tanaka Yuki"
+        ]
+      },
+      "Michael Brown": {
+        "id": "auth_008",
+        "all_variations": [
+          "Michael Brown",
+          "M. Brown",
+          "Michael J. Brown",
+          "Brown, Michael",
+          "M. J. Brown"
+        ]
+      },
+      "Lisa Chen": {
+        "id": "auth_009",
+        "all_variations": [
+          "Lisa Chen",
+          "L. Chen",
+          "Lisa Y. Chen",
+          "Chen, Lisa",
+          "Chen Lisa"
+        ]
+      },
+      "David Miller": {
+        "id": "auth_010",
+        "all_variations": [
+          "David Miller",
+          "D. Miller",
+          "David A. Miller",
+          "Miller, David",
+          "D. A. Miller"
+        ]
+      }
+    },
+    "institutions": {
+      "Massachusetts Institute of Technology": {
+        "id": "inst_001",
+        "all_variations": [
+          "Massachusetts Institute of Technology",
+          "MIT",
+          "M.I.T.",
+          "Massachusetts Inst. of Technology",
+          "Mass. Institute of Technology"
+        ]
+      },
+      "Stanford University": {
+        "id": "inst_002",
+        "all_variations": [
+          "Stanford University",
+          "Stanford",
+          "Stanford Univ.",
+          "Stanford U.",
+          "Leland Stanford Junior University"
+        ]
+      },
+      "Tsinghua University": {
+        "id": "inst_003",
+        "all_variations": [
+          "Tsinghua University",
+          "Tsinghua",
+          "Tsinghua Univ.",
+          "Qinghua University",
+          "THU"
+        ]
+      },
+      "University of Oxford": {
+        "id": "inst_004",
+        "all_variations": [
+          "University of Oxford",
+          "Oxford",
+          "Oxford Univ.",
+          "Oxford University",
+          "Univ. of Oxford"
+        ]
+      },
+      "University of Tokyo": {
+        "id": "inst_005",
+        "all_variations": [
+          "University of Tokyo",
+          "Tokyo Univ.",
+          "UTokyo",
+          "Tokyo University",
+          "Univ. of Tokyo"
+        ]
+      }
+    }
+  },
+  "expected_statistics": {
+    "total_papers": 100,
+    "total_unique_authors": 10,
+    "total_unique_institutions": 5,
+    "papers_with_missing_abstract": 1,
+    "papers_with_missing_keywords": 1,
+    "papers_with_missing_institution": 1,
+    "papers_with_duplicate_authors": 1
+  },
+  "validation_checks": {
+    "all_paper_ids_unique": true,
+    "citation_graph_has_orphans": true,
+    "citation_graph_has_self_citations": true,
+    "orphan_citation_paper_id": "paper_9999",
+    "self_citation_paper_id": "paper_0015"
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "authors": {
+    "auth_001": {
+      "canonical_name": "John Smith",
+      "known_variations": [
+        "J. Smith",
+        "John A. Smith"
+      ],
+      "primary_institution": "inst_001",
+      "email_domain": "massachuse.edu"
+    },
+    "auth_002": {
+      "canonical_name": "Maria Garcia",
+      "known_variations": [
+        "M. Garcia",
+        "Maria L. Garcia"
+      ],
+      "primary_institution": "inst_002",
+      "email_domain": "stanfordun.edu"
+    },
+    "auth_003": {
+      "canonical_name": "Wei Zhang",
+      "known_variations": [
+        "W. Zhang",
+        "Wei W. Zhang"
+      ],
+      "primary_institution": "inst_003",
+      "email_domain": "tsinghuaun.edu"
+    },
+    "auth_004": {
+      "canonical_name": "Emily Johnson",
+      "known_variations": [
+        "E. Johnson",
+        "Emily R. Johnson"
+      ],
+      "primary_institution": "inst_001",
+      "email_domain": "massachuse.edu"
+    },
+    "auth_005": {
+      "canonical_name": "Ahmed Hassan",
+      "known_variations": [
+        "A. Hassan",
+        "Ahmed M. Hassan"
+      ],
+      "primary_institution": "inst_004",
+      "email_domain": "university.edu"
+    },
+    "auth_006": {
+      "canonical_name": "Sarah Williams",
+      "known_variations": [
+        "S. Williams",
+        "Sarah K. Williams"
+      ],
+      "primary_institution": "inst_002",
+      "email_domain": "stanfordun.edu"
+    },
+    "auth_007": {
+      "canonical_name": "Yuki Tanaka",
+      "known_variations": [
+        "Y. Tanaka",
+        "Yuki S. Tanaka"
+      ],
+      "primary_institution": "inst_005",
+      "email_domain": "university.edu"
+    },
+    "auth_008": {
+      "canonical_name": "Michael Brown",
+      "known_variations": [
+        "M. Brown",
+        "Michael J. Brown"
+      ],
+      "primary_institution": "inst_003",
+      "email_domain": "tsinghuaun.edu"
+    },
+    "auth_009": {
+      "canonical_name": "Lisa Chen",
+      "known_variations": [
+        "L. Chen",
+        "Lisa Y. Chen"
+      ],
+      "primary_institution": "inst_004",
+      "email_domain": "university.edu"
+    },
+    "auth_010": {
+      "canonical_name": "David Miller",
+      "known_variations": [
+        "D. Miller",
+        "David A. Miller"
+      ],
+      "primary_institution": "inst_005",
+      "email_domain": "university.edu"
+    }
+  },
+  "institutions": {
+    "inst_001": {
+      "canonical_name": "Massachusetts Institute of Technology",
+      "known_variations": [
+        "MIT",
+        "M.I.T."
+      ],
+      "country": "USA"
+    },
+    "inst_002": {
+      "canonical_name": "Stanford University",
+      "known_variations": [
+        "Stanford",
+        "Stanford Univ."
+      ],
+      "country": "USA"
+    },
+    "inst_003": {
+      "canonical_name": "Tsinghua University",
+      "known_variations": [
+        "Tsinghua",
+        "Tsinghua Univ."
+      ],
+      "country": "China"
+    },
+    "inst_004": {
+      "canonical_name": "University of Oxford",
+      "known_variations": [
+        "Oxford",
+        "Oxford Univ."
+      ],
+      "country": "UK"
+    },
+    "inst_005": {
+      "canonical_name": "University of Tokyo",
+      "known_variations": [
+        "Tokyo Univ.",
+        "UTokyo"
+      ],
+      "country": "Japan"
+    }
+  }
+}
