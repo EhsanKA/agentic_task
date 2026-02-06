@@ -1,10 +1,13 @@
 # Research Paper Entity Extraction and Citation Analysis Benchmark
+## (ENHANCED VERSION - Headroom Testing for Gemini 3 Pro)
 
 ## Scenario
 
-You are a data scientist tasked with building an automated pipeline for analyzing research paper metadata. Your goal is to extract structured information from a collection of research papers, resolve entity ambiguities, construct a citation network, and produce a comprehensive analytical report.
+You are a data scientist tasked with building an **advanced automated pipeline** for analyzing research paper metadata. Your goal is to extract structured information from a collection of research papers, resolve entity ambiguities (including challenging edge cases), detect anomalies in the citation network, and produce a comprehensive analytical report.
 
 **You must decide for yourself how to decompose the task**, which intermediate computations to perform, and in what order. **Do not simply follow a fixed step-by-step structure.**
+
+**This task contains deliberately challenging edge cases** that require careful reasoning to solve correctly.
 
 ---
 
@@ -23,7 +26,7 @@ You have access to three data sources (already loaded in memory):
     "institution": str | None, # e.g., "MIT" or "Stanford University"
     "abstract": str,           # May be empty string ""
     "keywords": list[str],     # e.g., ["machine learning", "neural networks"], may be []
-    "venue": str,              # e.g., "NeurIPS", "ICML"
+    "venue": str,              # e.g., "NeurIPS", "ICML", "NIPS" (venue names may vary!)
     "year": int,
     "publication_date": str    # ISO format "YYYY-MM-DD"
 }
@@ -42,8 +45,7 @@ You have access to three data sources (already loaded in memory):
             "known_variations": list[str], # e.g., ["J. Smith", "John A. Smith"]
             "primary_institution": str   # Institution ID, e.g., "inst_001"
         },
-        "auth_002": { ... },
-        # ... more authors keyed by auth_XXX
+        # ... more authors (NOTE: Some authors share initials but are DIFFERENT people!)
     },
     "institutions": {
         "inst_001": {
@@ -51,26 +53,57 @@ You have access to three data sources (already loaded in memory):
             "known_variations": list[str], # e.g., ["MIT", "M.I.T."]
             "country": str
         },
-        "inst_002": { ... },
-        # ... more institutions keyed by inst_XXX
-    }
+        # ... more institutions
+    },
+    "disambiguation_notes": list[dict],  # Hints about ambiguous entities
+    "venue_notes": list[str]             # Notes about venue name changes
 }
 ```
 
-### Data Challenges (Intentional)
+### Data Challenges (ENHANCED - Requires Advanced Reasoning)
 
-The data contains edge cases you must handle:
+The data contains **challenging edge cases** you must handle:
+
+#### Basic Challenges (Standard)
 - **Author name variations**: Same person appears as "John Smith", "J. Smith", "Smith, John"
 - **Institution name variations**: Same institution appears as "MIT", "Massachusetts Institute of Technology"
 - **Missing fields**: Some papers have empty abstract (`""`) or empty keywords (`[]`)
 - **Orphan citations**: Some citations reference paper_ids that don't exist in papers_raw
 - **Self-citations**: Some papers cite themselves
 
+#### Advanced Challenges (Headroom Testing)
+
+1. **⚠️ AMBIGUOUS AUTHORS**: Some authors share the same initials but are **DIFFERENT PEOPLE** at different institutions.
+   - Example: "J. Smith" at MIT is **NOT** the same person as "J. Smith" at Oxford
+   - You must use **institution context** to disambiguate
+   - Naive merging will produce INCORRECT results
+
+2. **⚠️ TYPOS/OCR ERRORS**: Some author and institution names contain typos.
+   - Example: "Jonh Smith" should map to "John Smith"
+   - Example: "Massachusets Institute of Technology" should map to "MIT"
+   - You must use fuzzy matching or edit distance
+
+3. **⚠️ CITATION RING DETECTION**: A subset of papers cite each other in a suspicious circular pattern.
+   - Identify groups where: A→B→C→D→E→A (and cross-citations within)
+   - These should be flagged as anomalous
+
+4. **⚠️ TEMPORAL ANOMALIES**: Some citations violate temporal logic.
+   - A paper from 2021 cannot cite a paper from 2023
+   - Identify and flag these impossible citations
+
+5. **⚠️ VENUE DISAMBIGUATION**: Venues may appear with different names.
+   - "NIPS" → "NeurIPS" (renamed in 2018)
+   - "CVPR" → "Conference on Computer Vision and Pattern Recognition"
+   - These should be normalized to canonical forms
+
+6. **⚠️ CONFLICTING AFFILIATIONS**: Some papers list an author with an incorrect institution.
+   - Cross-reference with affiliations_raw to detect mismatches
+
 ---
 
 ## Requirements
 
-You are free to choose the order and decomposition of the task, but your final implementation must produce all of the following variables. **The groupings below are for documentation purposes only—they do not imply any particular execution order.**
+You are free to choose the order and decomposition of the task, but your final implementation must produce all of the following variables.
 
 ### Required Variables
 
@@ -86,119 +119,129 @@ You are free to choose the order and decomposition of the task, but your final i
 
 | Variable | Type | Description |
 |----------|------|-------------|
-| `extracted_authors` | `list[dict]` | List of extracted author entities. Each dict must have keys: `name` (str), `paper_ids` (list[str]), `name_variations` (list[str]) |
-| `extracted_institutions` | `list[dict]` | List of extracted institution entities. Each dict must have keys: `name` (str), `paper_ids` (list[str]), `name_variations` (list[str]) |
-| `extracted_topics` | `dict[str, int]` | Dictionary mapping topic/keyword strings to their frequency count across all papers |
-| `methods_from_abstracts` | `list[str]` | List of research methods mentioned in abstracts (e.g., "gradient descent", "cross-validation", "attention mechanism") |
+| `extracted_authors` | `list[dict]` | Each dict: `name`, `paper_ids`, `name_variations` |
+| `extracted_institutions` | `list[dict]` | Each dict: `name`, `paper_ids`, `name_variations` |
+| `extracted_topics` | `dict[str, int]` | Topic → frequency count |
+| `methods_from_abstracts` | `list[str]` | Research methods found in abstracts |
 
 #### Resolution Variables
 
 | Variable | Type | Description |
 |----------|------|-------------|
-| `author_resolution_map` | `dict[str, str]` | Maps each author name variation to its canonical form. Keys are variations, values are canonical names |
-| `institution_resolution_map` | `dict[str, str]` | Maps each institution name variation to its canonical form |
-| `resolved_author_count` | `int` | Number of unique authors after resolution |
-| `resolved_institution_count` | `int` | Number of unique institutions after resolution |
+| `author_resolution_map` | `dict[str, str]` | Variation → canonical name |
+| `institution_resolution_map` | `dict[str, str]` | Variation → canonical name |
+| `resolved_author_count` | `int` | Unique authors after resolution |
+| `resolved_institution_count` | `int` | Unique institutions after resolution |
 
 #### Citation Network Variables
 
 | Variable | Type | Description |
 |----------|------|-------------|
-| `citation_graph` | `dict[str, list[str]]` | Adjacency list where keys are paper_ids and values are lists of paper_ids they cite |
-| `in_degree` | `dict[str, int]` | Number of times each paper is cited (incoming citations) |
-| `out_degree` | `dict[str, int]` | Number of papers each paper cites (outgoing citations) |
-| `pagerank_scores` | `dict[str, float]` | PageRank centrality score for each paper |
-| `top_cited_papers` | `list[str]` | Top 10 most cited paper_ids (by in_degree), sorted descending |
-| `orphan_citations` | `list[dict]` | List of citation records where cited_paper does not exist in papers_df. Each dict has keys: citing_paper, cited_paper |
-| `self_citations` | `list[str]` | List of paper_ids that cite themselves |
+| `citation_graph` | `dict[str, list[str]]` | Adjacency list |
+| `in_degree` | `dict[str, int]` | Incoming citations per paper |
+| `out_degree` | `dict[str, int]` | Outgoing citations per paper |
+| `pagerank_scores` | `dict[str, float]` | PageRank centrality scores |
+| `top_cited_papers` | `list[str]` | Top 10 most cited paper_ids |
+| `orphan_citations` | `list[dict]` | Citations to non-existent papers |
+| `self_citations` | `list[str]` | Paper_ids that cite themselves |
+
+#### ⭐ NEW: Anomaly Detection Variables (Headroom)
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `citation_ring_papers` | `list[str]` | Paper_ids involved in suspicious citation rings |
+| `temporal_anomalies` | `list[dict]` | Citations where citing_paper.year > cited_paper.year. Each dict: `citing_paper`, `cited_paper`, `citing_year`, `cited_year` |
+| `ambiguous_author_resolutions` | `list[dict]` | Cases where "J. Smith" was disambiguated. Each dict: `name_variation`, `resolved_to`, `institution_used`, `reasoning` |
+| `typo_corrections` | `list[dict]` | Typos that were corrected. Each dict: `original`, `corrected`, `confidence` |
+| `venue_normalizations` | `dict[str, str]` | Map of venue variations to canonical names |
+| `affiliation_conflicts` | `list[dict]` | Papers where listed institution doesn't match author's known institution. Each dict: `paper_id`, `author`, `listed_institution`, `expected_institution` |
 
 #### Validation Variables
-
-You must populate this dictionary:
 
 ```python
 validation_results: dict[str, bool]
 ```
 
-Required keys:
+Required keys (ENHANCED):
 
 | Key | What to Check |
 |-----|---------------|
 | `"papers_loaded_ok"` | papers_df has expected columns and >0 rows |
 | `"citations_loaded_ok"` | citations_df has expected columns and >0 rows |
-| `"affiliations_loaded_ok"` | affiliations_data is a valid dict with 'authors' and 'institutions' keys |
-| `"no_duplicate_paper_ids"` | All paper_ids in papers_df are unique |
+| `"affiliations_loaded_ok"` | affiliations_data is valid dict |
+| `"no_duplicate_paper_ids"` | All paper_ids unique |
 | `"authors_extracted"` | extracted_authors has >0 entries |
 | `"institutions_extracted"` | extracted_institutions has >0 entries |
-| `"resolution_maps_valid"` | author_resolution_map and institution_resolution_map are non-empty dicts |
-| `"citation_graph_built"` | citation_graph is a non-empty dict |
-| `"pagerank_computed"` | pagerank_scores is a non-empty dict with float values |
-| `"orphans_identified"` | orphan_citations check was performed (may be empty list) |
-| `"self_citations_identified"` | self_citations check was performed (may be empty list) |
-| `"all_pagerank_finite"` | All values in pagerank_scores are finite (no NaN/Inf) |
+| `"resolution_maps_valid"` | Resolution maps are non-empty |
+| `"citation_graph_built"` | citation_graph is non-empty |
+| `"pagerank_computed"` | pagerank_scores is non-empty with floats |
+| `"orphans_identified"` | Checked for orphan citations |
+| `"self_citations_identified"` | Checked for self-citations |
+| `"all_pagerank_finite"` | All PageRank values are finite |
+| `"citation_rings_checked"` | ⭐ Checked for citation rings |
+| `"temporal_anomalies_checked"` | ⭐ Checked for temporal violations |
+| `"ambiguous_authors_handled"` | ⭐ Used institution context for disambiguation |
+| `"typos_handled"` | ⭐ Applied fuzzy matching for typos |
+| `"venues_normalized"` | ⭐ Normalized venue name variations |
 
 #### Summary Statistics
 
-You must produce:
-
-| Variable | Type | Description |
-|----------|------|-------------|
-| `summary_stats` | `dict[str, Any]` | Dictionary containing aggregated statistics |
-
-Required keys in `summary_stats`:
+`summary_stats: dict[str, Any]` with required keys:
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `"total_papers"` | `int` | Total number of papers |
-| `"total_citations"` | `int` | Total number of citation relationships |
-| `"unique_authors_raw"` | `int` | Unique author names before resolution |
-| `"unique_authors_resolved"` | `int` | Unique authors after resolution |
-| `"unique_institutions_raw"` | `int` | Unique institution names before resolution |
-| `"unique_institutions_resolved"` | `int` | Unique institutions after resolution |
-| `"papers_with_missing_abstract"` | `int` | Count of papers with empty/null abstract |
-| `"papers_with_missing_keywords"` | `int` | Count of papers with empty/null keywords |
-| `"orphan_citation_count"` | `int` | Number of orphan citations found |
-| `"self_citation_count"` | `int` | Number of self-citations found |
-| `"avg_citations_per_paper"` | `float` | Average number of outgoing citations per paper |
-| `"most_common_venue"` | `str` | Most frequent publication venue |
-| `"year_range"` | `tuple[int, int]` | (min_year, max_year) of publications |
+| `"total_papers"` | `int` | Total papers |
+| `"total_citations"` | `int` | Total citation relationships |
+| `"unique_authors_raw"` | `int` | Before resolution |
+| `"unique_authors_resolved"` | `int` | After resolution |
+| `"unique_institutions_raw"` | `int` | Before resolution |
+| `"unique_institutions_resolved"` | `int` | After resolution |
+| `"papers_with_missing_abstract"` | `int` | Empty/null abstract |
+| `"papers_with_missing_keywords"` | `int` | Empty/null keywords |
+| `"orphan_citation_count"` | `int` | Orphan citations |
+| `"self_citation_count"` | `int` | Self-citations |
+| `"avg_citations_per_paper"` | `float` | Average outgoing citations |
+| `"most_common_venue"` | `str` | Most frequent venue |
+| `"year_range"` | `tuple[int, int]` | (min_year, max_year) |
+| `"citation_ring_count"` | `int` | ⭐ Papers in citation rings |
+| `"temporal_anomaly_count"` | `int` | ⭐ Temporal violations |
+| `"typo_correction_count"` | `int` | ⭐ Typos corrected |
+| `"affiliation_conflict_count"` | `int` | ⭐ Affiliation mismatches |
 
 #### Final Report
-
-You must produce:
 
 ```python
 final_report: dict
 ```
 
-The `final_report` must have this exact structure:
+Must have this structure:
 
 ```python
 {
     "metadata": {
         "task": "Research Paper Entity Extraction and Citation Analysis",
         "papers_analyzed": int,
-        "execution_timestamp": str  # ISO format
+        "execution_timestamp": str
     },
     "entity_extraction": {
         "authors": {
             "total_unique": int,
-            "top_5_by_paper_count": list[dict]  # [{"name": str, "paper_count": int}, ...]
+            "top_5_by_paper_count": [{"name": str, "paper_count": int}, ...]
         },
         "institutions": {
             "total_unique": int,
-            "top_5_by_paper_count": list[dict]  # [{"name": str, "paper_count": int}, ...]
+            "top_5_by_paper_count": [{"name": str, "paper_count": int}, ...]
         },
         "topics": {
             "total_unique": int,
-            "top_10_by_frequency": list[dict]  # [{"topic": str, "count": int}, ...]
+            "top_10_by_frequency": [{"topic": str, "count": int}, ...]
         }
     },
     "citation_analysis": {
         "total_citations": int,
-        "top_10_cited_papers": list[dict],  # [{"paper_id": str, "citation_count": int, "title": str}, ...]
-        "orphan_citations": list[dict],
-        "self_citations": list[str],
+        "top_10_cited_papers": [{"paper_id": str, "citation_count": int, "title": str}, ...],
+        "orphan_citations": [{"citing_paper": str, "cited_paper": str}, ...],
+        "self_citations": [str, ...],
         "network_statistics": {
             "avg_in_degree": float,
             "avg_out_degree": float,
@@ -206,15 +249,35 @@ The `final_report` must have this exact structure:
             "max_out_degree": int
         }
     },
+    "anomaly_detection": {  # ⭐ NEW SECTION
+        "citation_rings": {
+            "detected": bool,
+            "papers_involved": [str, ...],
+            "description": str
+        },
+        "temporal_anomalies": {
+            "count": int,
+            "examples": [{"citing": str, "cited": str, "issue": str}, ...]
+        },
+        "ambiguous_resolutions": [
+            {"variation": str, "resolved_to": str, "method": str}, ...
+        ],
+        "typo_corrections": [
+            {"original": str, "corrected": str}, ...
+        ],
+        "affiliation_conflicts": [
+            {"paper_id": str, "author": str, "conflict": str}, ...
+        ]
+    },
     "data_quality": {
         "missing_abstracts": int,
         "missing_keywords": int,
         "missing_institutions": int,
-        "duplicate_author_entries": int  # Papers where same author appears twice
+        "duplicate_author_entries": int
     },
     "validation_summary": {
         "all_checks_passed": bool,
-        "failed_checks": list[str]  # List of validation keys that failed
+        "failed_checks": [str, ...]
     }
 }
 ```
@@ -223,33 +286,14 @@ The `final_report` must have this exact structure:
 
 ## Constraints
 
-1. **Do not hardcode any specific paper IDs, author names, or institution names** - your solution must work for any dataset following the same schema.
-
-2. **Entity resolution must use fuzzy matching or the reference data** - do not assume exact string matches.
-
-3. **PageRank must be computed using a proper implementation** - you may use networkx or implement the iterative algorithm with damping factor 0.85.
-
-4. **All intermediate variables must be inspectable** - store results in the named variables, do not just compute and discard.
-
-5. **Handle edge cases gracefully** - missing fields, empty lists, malformed data should not crash your pipeline.
-
----
-
-## Output Format
-
-Your final output must include:
-
-1. All required variables populated and accessible
-2. The `final_report` dictionary printed as formatted JSON
-3. The `validation_results` dictionary showing all checks
-
-```python
-import json
-print("=== VALIDATION RESULTS ===")
-print(json.dumps(validation_results, indent=2))
-print("\n=== FINAL REPORT ===")
-print(json.dumps(final_report, indent=2))
-```
+1. **Do not hardcode specific paper IDs, author names, or institution names**
+2. **Entity resolution MUST use institution context for disambiguation** - "J. Smith" at MIT ≠ "J. Smith" at Oxford
+3. **Typo handling MUST use fuzzy matching** (e.g., Levenshtein distance)
+4. **PageRank with damping factor 0.85**
+5. **Citation rings require cycle detection** in the citation graph
+6. **Temporal anomalies require comparing publication years**
+7. **All intermediate variables must be inspectable**
+8. **Handle edge cases gracefully**
 
 ---
 
@@ -257,10 +301,25 @@ print(json.dumps(final_report, indent=2))
 
 Your solution is successful if:
 
-1. **All validation checks pass** (`all(validation_results.values()) == True`)
-2. **Entity resolution reduces author count** (`resolved_author_count < unique_authors_raw`)
-3. **Orphan citations are correctly identified** (there is at least one)
-4. **Self-citations are correctly identified** (there is at least one)
-5. **PageRank scores sum to approximately 1.0** (±0.01)
-6. **Final report follows the exact schema specified**
-7. **All numeric values are finite** (no NaN, no Inf)
+1. **All validation checks pass** (including new headroom checks)
+2. **Entity resolution correctly disambiguates** "J. Smith" at different institutions as different people
+3. **Citation rings are detected** (there is at least one ring of 5 papers)
+4. **Temporal anomalies are detected** (there is at least one)
+5. **Typos are corrected** with fuzzy matching
+6. **Venue names are normalized** (NIPS → NeurIPS)
+7. **Affiliation conflicts are identified**
+8. **PageRank scores sum to ~1.0**
+9. **Final report follows the exact schema**
+10. **All numeric values are finite**
+
+---
+
+## Output Format
+
+```python
+import json
+print("=== VALIDATION RESULTS ===")
+print(json.dumps(validation_results, indent=2))
+print("\n=== FINAL REPORT ===")
+print(json.dumps(final_report, indent=2, default=str))
+```
