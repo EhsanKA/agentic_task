@@ -8,8 +8,12 @@
           "J. Smith",
           "John A. Smith",
           "J. A. Smith",
-          "Smith, John"
-        ]
+          "Smith, John",
+          "Jonh Smith",
+          "John Smtih",
+          "Jhon Smith"
+        ],
+        "is_ambiguous": true
       },
       "Maria Garcia": {
         "id": "auth_002",
@@ -18,18 +22,21 @@
           "M. Garcia",
           "Maria L. Garcia",
           "Garcia, Maria",
-          "M. L. Garcia"
-        ]
+          "M. L. Garcia",
+          "Maria Gracia",
+          "Mara Garcia"
+        ],
+        "is_ambiguous": false
       },
       "Wei Zhang": {
-        "id": "auth_003",
+        "id": "auth_012",
         "all_variations": [
           "Wei Zhang",
           "W. Zhang",
-          "Wei W. Zhang",
-          "Zhang, Wei",
-          "Zhang Wei"
-        ]
+          "Wei X. Zhang",
+          "Zhang, Wei"
+        ],
+        "is_ambiguous": true
       },
       "Emily Johnson": {
         "id": "auth_004",
@@ -38,8 +45,11 @@
           "E. Johnson",
           "Emily R. Johnson",
           "Johnson, Emily",
-          "E. R. Johnson"
-        ]
+          "E. R. Johnson",
+          "Emilly Johnson",
+          "Emily Johsnon"
+        ],
+        "is_ambiguous": false
       },
       "Ahmed Hassan": {
         "id": "auth_005",
@@ -48,8 +58,11 @@
           "A. Hassan",
           "Ahmed M. Hassan",
           "Hassan, Ahmed",
-          "A. M. Hassan"
-        ]
+          "A. M. Hassan",
+          "Ahmd Hassan",
+          "Ahmed Hasan"
+        ],
+        "is_ambiguous": false
       },
       "Sarah Williams": {
         "id": "auth_006",
@@ -58,8 +71,11 @@
           "S. Williams",
           "Sarah K. Williams",
           "Williams, Sarah",
-          "S. K. Williams"
-        ]
+          "S. K. Williams",
+          "Sara Williams",
+          "Sarah Willams"
+        ],
+        "is_ambiguous": false
       },
       "Yuki Tanaka": {
         "id": "auth_007",
@@ -68,8 +84,11 @@
           "Y. Tanaka",
           "Yuki S. Tanaka",
           "Tanaka, Yuki",
-          "Tanaka Yuki"
-        ]
+          "Tanaka Yuki",
+          "Yuki Takana",
+          "Yuki Tanka"
+        ],
+        "is_ambiguous": false
       },
       "Michael Brown": {
         "id": "auth_008",
@@ -78,8 +97,11 @@
           "M. Brown",
           "Michael J. Brown",
           "Brown, Michael",
-          "M. J. Brown"
-        ]
+          "M. J. Brown",
+          "Micheal Brown",
+          "Michael Browm"
+        ],
+        "is_ambiguous": false
       },
       "Lisa Chen": {
         "id": "auth_009",
@@ -88,8 +110,11 @@
           "L. Chen",
           "Lisa Y. Chen",
           "Chen, Lisa",
-          "Chen Lisa"
-        ]
+          "Chen Lisa",
+          "Lisa Chem",
+          "Lisa Chne"
+        ],
+        "is_ambiguous": false
       },
       "David Miller": {
         "id": "auth_010",
@@ -98,8 +123,24 @@
           "D. Miller",
           "David A. Miller",
           "Miller, David",
-          "D. A. Miller"
-        ]
+          "D. A. Miller",
+          "Davd Miller",
+          "David Miler"
+        ],
+        "is_ambiguous": false
+      },
+      "James Smith": {
+        "id": "auth_011",
+        "all_variations": [
+          "James Smith",
+          "J. Smith",
+          "James B. Smith",
+          "J. B. Smith",
+          "Smith, James",
+          "Jmaes Smith",
+          "James Smtih"
+        ],
+        "is_ambiguous": true
       }
     },
     "institutions": {
@@ -110,7 +151,9 @@
           "MIT",
           "M.I.T.",
           "Massachusetts Inst. of Technology",
-          "Mass. Institute of Technology"
+          "Mass. Institute of Technology",
+          "Massachusets Institute of Technology",
+          "MIT University"
         ]
       },
       "Stanford University": {
@@ -120,7 +163,9 @@
           "Stanford",
           "Stanford Univ.",
           "Stanford U.",
-          "Leland Stanford Junior University"
+          "Leland Stanford Junior University",
+          "Standford University",
+          "Stanfrod University"
         ]
       },
       "Tsinghua University": {
@@ -130,7 +175,9 @@
           "Tsinghua",
           "Tsinghua Univ.",
           "Qinghua University",
-          "THU"
+          "THU",
+          "Tsignhua University",
+          "Tsingua University"
         ]
       },
       "University of Oxford": {
@@ -140,7 +187,9 @@
           "Oxford",
           "Oxford Univ.",
           "Oxford University",
-          "Univ. of Oxford"
+          "Univ. of Oxford",
+          "Univeristy of Oxford",
+          "Oxfrod University"
         ]
       },
       "University of Tokyo": {
@@ -150,25 +199,74 @@
           "Tokyo Univ.",
           "UTokyo",
           "Tokyo University",
-          "Univ. of Tokyo"
+          "Univ. of Tokyo",
+          "Univeristy of Tokyo",
+          "Tokoy University"
         ]
       }
     }
   },
   "expected_statistics": {
     "total_papers": 100,
-    "total_unique_authors": 10,
-    "total_unique_institutions": 5,
-    "papers_with_missing_abstract": 1,
-    "papers_with_missing_keywords": 1,
-    "papers_with_missing_institution": 1,
-    "papers_with_duplicate_authors": 1
+    "total_unique_authors": 12,
+    "total_unique_institutions": 5
   },
   "validation_checks": {
     "all_paper_ids_unique": true,
     "citation_graph_has_orphans": true,
-    "citation_graph_has_self_citations": true,
-    "orphan_citation_paper_id": "paper_9999",
-    "self_citation_paper_id": "paper_0015"
+    "self_citation_paper_ids": [
+      "paper_0015",
+      "paper_0060"
+    ]
+  },
+  "headroom_challenges": {
+    "ambiguous_authors": [
+      {
+        "variation": "J. Smith",
+        "identities": [
+          "auth_001 (MIT)",
+          "auth_011 (Oxford)"
+        ]
+      },
+      {
+        "variation": "W. Zhang",
+        "identities": [
+          "auth_003 (Tsinghua)",
+          "auth_012 (Stanford)"
+        ]
+      }
+    ],
+    "citation_ring": {
+      "papers": [
+        "paper_0030",
+        "paper_0031",
+        "paper_0032",
+        "paper_0033",
+        "paper_0034"
+      ]
+    },
+    "temporal_anomalies": {
+      "source": "paper_0040",
+      "targets": [
+        "paper_0050",
+        "paper_0051"
+      ]
+    },
+    "typo_examples": [
+      {
+        "typo": "Jonh Smith",
+        "canonical": "John Smith"
+      },
+      {
+        "typo": "Maria Gracia",
+        "canonical": "Maria Garcia"
+      }
+    ],
+    "conflicting_affiliations": {
+      "paper_id": "paper_0025",
+      "author": "Maria Garcia",
+      "listed": "MIT",
+      "correct": "Stanford University"
+    }
   }
 }

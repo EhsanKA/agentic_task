@@ -89,6 +89,24 @@
       ],
       "primary_institution": "inst_005",
       "email_domain": "university.edu"
+    },
+    "auth_011": {
+      "canonical_name": "James Smith",
+      "known_variations": [
+        "J. Smith",
+        "James B. Smith"
+      ],
+      "primary_institution": "inst_004",
+      "email_domain": "university.edu"
+    },
+    "auth_012": {
+      "canonical_name": "Wei Zhang",
+      "known_variations": [
+        "W. Zhang",
+        "Wei X. Zhang"
+      ],
+      "primary_institution": "inst_002",
+      "email_domain": "stanfordun.edu"
     }
   },
   "institutions": {
@@ -132,5 +150,23 @@
       ],
       "country": "Japan"
     }
-  }
+  },
+  "disambiguation_notes": [
+    {
+      "warning": "'John Smith' (auth_001) at Massachusetts Institute of Technology shares initials with 'James Smith' (auth_011) at University of Oxford. These are DIFFERENT people."
+    },
+    {
+      "warning": "'Wei Zhang' (auth_003) at Tsinghua University shares initials with 'Wei Zhang' (auth_012) at Stanford University. These are DIFFERENT people."
+    },
+    {
+      "warning": "'James Smith' (auth_011) at University of Oxford shares initials with 'John Smith' (auth_001) at Massachusetts Institute of Technology. These are DIFFERENT people."
+    },
+    {
+      "warning": "'Wei Zhang' (auth_012) at Stanford University shares initials with 'Wei Zhang' (auth_003) at Tsinghua University. These are DIFFERENT people."
+    }
+  ],
+  "venue_notes": [
+    "NIPS was renamed to NeurIPS in 2018.",
+    "Venues may appear as acronyms or full names."
+  ]
 }
