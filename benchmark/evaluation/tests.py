@@ -6,6 +6,7 @@ Usage:
     run_all_tests()
 """
 
+import os
 import unittest
 
 import numpy as np
@@ -151,6 +152,17 @@ class TestFinalReport(unittest.TestCase):
         self.assertTrue(fr["validation_summary"]["all_checks_passed"])
 
 
+class TestArtifactGeneration(unittest.TestCase):
+    """Verify the agent saved final_report.json to disk."""
+
+    def test_report_saved_to_disk(self):
+        data_dir = CTX.get("_data_dir", "")
+        if not data_dir:
+            self.skipTest("_data_dir not set in context")
+        report_path = os.path.join(data_dir, "final_report.json")
+        self.assertTrue(os.path.exists(report_path), "final_report.json must be saved to DATA_DIR")
+
+
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
@@ -158,7 +170,7 @@ class TestFinalReport(unittest.TestCase):
 ALL_TEST_CLASSES = [
     TestDataLoading, TestEntityExtraction, TestEntityResolution,
     TestCitationNetwork, TestHeadroomChallenges, TestValidationResults,
-    TestSummaryStats, TestFinalReport,
+    TestSummaryStats, TestFinalReport, TestArtifactGeneration,
 ]
 
 

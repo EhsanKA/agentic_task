@@ -1,6 +1,7 @@
 """Agent utilities: model selection, prompt construction, code extraction, and execution."""
 
 import json
+import os
 import re
 import traceback
 from collections import Counter, defaultdict
@@ -33,48 +34,58 @@ def select_model(available_models: list, preferred: str = DEFAULT_MODEL) -> str:
     raise RuntimeError("No AI models available in Colab Pro")
 
 
-def build_agent_context(
-    prompt: str,
-    papers_raw: list,
-    citations_raw: pd.DataFrame,
-    affiliations_raw: dict,
-) -> str:
-    """Build the full prompt context with data samples for the agent."""
+def build_agent_context(prompt: str, data_dir: str) -> str:
+    """Build the full prompt context with file paths and data samples."""
+    papers_path = os.path.join(data_dir, "papers_metadata.json")
+    citations_path = os.path.join(data_dir, "citations.csv")
+    affiliations_path = os.path.join(data_dir, "author_affiliations.json")
+
+    with open(papers_path) as f:
+        sample_paper = json.load(f)[0]
+    sample_citations = pd.read_csv(citations_path, nrows=3)
+    with open(affiliations_path) as f:
+        aff = json.load(f)
+
     return f"""
-IMPORTANT: Write Python code to solve this task. The following variables are ALREADY LOADED in memory - DO NOT REDEFINE THEM:
+Write Python code to solve this task. You have one pre-defined variable:
 
-- papers_raw: list[dict] with {len(papers_raw)} papers
-- citations_raw: pd.DataFrame with {len(citations_raw)} citation rows
-- affiliations_raw: dict with author/institution reference data
+- DATA_DIR = "{data_dir}"   (str, path to the data directory)
 
-These variables exist and are ready to use. Reference them directly.
+Files in DATA_DIR:
+- papers_metadata.json  (~100 paper records)
+- citations.csv         (citation relationships)
+- author_affiliations.json (entity resolution reference data)
 
-Sample paper from papers_raw:
-{json.dumps(papers_raw[0], indent=2)}
+You MUST load these files yourself using DATA_DIR. Do NOT assume they are pre-loaded.
 
-Sample citations_raw columns: {citations_raw.columns.tolist()}
-{citations_raw.head(3).to_string()}
+Pre-loaded modules and utilities available in the namespace:
+  pd (pandas), np (numpy), json, re, os, nx (networkx),
+  Counter (collections.Counter), defaultdict (collections.defaultdict),
+  datetime (datetime.datetime)
 
-Sample affiliations_raw structure:
-- Keys: {list(affiliations_raw.keys())}
-- Sample author entry: {json.dumps(list(affiliations_raw['authors'].values())[0], indent=2)}
-- Sample institution entry: {json.dumps(list(affiliations_raw['institutions'].values())[0], indent=2)}
+Sample paper record:
+{json.dumps(sample_paper, indent=2)}
+
+Sample citations.csv:
+{sample_citations.to_string()}
+
+Sample affiliations structure:
+- Keys: {list(aff.keys())}
+- Sample author: {json.dumps(list(aff['authors'].values())[0], indent=2)}
+- Sample institution: {json.dumps(list(aff['institutions'].values())[0], indent=2)}
 
 TASK INSTRUCTIONS:
 {prompt}
 
 CRITICAL:
-1. DO NOT create fake/sample data - use the EXISTING papers_raw, citations_raw, affiliations_raw variables
-2. Return your solution as a single Python code block wrapped in ```python ... ```
-3. Your code will be executed with these variables already available in the namespace
+1. Load data from files using DATA_DIR — do not hardcode data
+2. Save final_report.json to DATA_DIR when done
+3. Return your solution as a single Python code block wrapped in ```python ... ```
 """
 
 
 def extract_code_blocks(response_text: str) -> list[str]:
-    """Extract Python code blocks from an LLM response.
-
-    Tries multiple patterns to handle formatting variations.
-    """
+    """Extract Python code blocks from an LLM response."""
     patterns = [
         r"```python\n(.*?)```",
         r"```python\s*(.*?)```",
@@ -86,27 +97,20 @@ def extract_code_blocks(response_text: str) -> list[str]:
         if blocks:
             return blocks
 
-    # Unclosed code block
     match = re.search(r"```python\s*\n?(import.*)", response_text, re.DOTALL)
     if match:
         return [match.group(1)]
 
-    # Raw Python code (no fences)
     if response_text.strip().startswith("import"):
         return [response_text]
 
     return []
 
 
-def execute_agent_code(
-    response_text: str,
-    papers_raw: list,
-    citations_raw: pd.DataFrame,
-    affiliations_raw: dict,
-) -> dict | None:
+def execute_agent_code(response_text: str, data_dir: str) -> dict | None:
     """Extract code from agent response and execute it.
 
-    Returns the exec globals dict on success, None on failure.
+    Returns the exec globals dict on success, or dict with __error__ on failure.
     """
     code_blocks = extract_code_blocks(response_text)
     if not code_blocks:
@@ -118,10 +122,8 @@ def execute_agent_code(
     print(f"Extracted {len(code_blocks)} code block(s), executing...")
 
     exec_globals = {
-        "papers_raw": papers_raw,
-        "citations_raw": citations_raw,
-        "affiliations_raw": affiliations_raw,
-        "pd": pd, "np": np, "json": json, "re": re, "nx": nx,
+        "DATA_DIR": data_dir,
+        "pd": pd, "np": np, "json": json, "re": re, "os": os, "nx": nx,
         "defaultdict": defaultdict, "Counter": Counter, "datetime": datetime,
         "Dict": Dict, "List": List, "Any": Any, "Tuple": Tuple,
     }
@@ -133,11 +135,15 @@ def execute_agent_code(
     except Exception as e:
         print(f"Error executing code: {e}")
         traceback.print_exc()
-        return None
+        return {"__error__": str(e), "__traceback__": traceback.format_exc()}
 
 
 def extract_variables(exec_result: dict) -> dict:
     """Extract required output variables from execution result."""
+    if "__error__" in exec_result:
+        print(f"Cannot extract variables — execution failed: {exec_result['__error__']}")
+        return {}
+
     extracted = {}
     missing = []
     for var in REQUIRED_VARIABLES:

@@ -5,7 +5,7 @@ BENCHMARK_PROMPT = """
 
 ## Scenario
 
-You are a data scientist building an automated pipeline for analyzing research paper metadata. Your goal is to extract structured information from a collection of research papers, resolve entity ambiguities (including challenging edge cases), detect anomalies in the citation network, and produce a comprehensive analytical report.
+You are a data scientist building an automated pipeline for analyzing research paper metadata. Your goal is to load data from files, extract structured information, resolve entity ambiguities (including challenging edge cases), detect anomalies in the citation network, and produce a comprehensive analytical report saved as an artifact.
 
 You must decide for yourself how to decompose the task, which intermediate computations to perform, and in what order.
 
@@ -15,30 +15,33 @@ The data contains deliberately challenging edge cases that require careful reaso
 
 ## Context
 
-You have access to three data sources (already loaded in memory):
+You have access to a data directory containing three files. The variable `DATA_DIR` (str) is already defined and points to the directory.
 
-### Input Data Structures
+### Input Files
 
-**`papers_raw`** (`list[dict]`): ~100 paper records with schema:
+1. **`papers_metadata.json`** — ~100 paper records as a JSON list:
 ```python
-{
-    "paper_id": str,           # e.g., "paper_0001"
-    "title": str,
-    "authors": list[str],      # e.g., ["J. Smith", "Maria Garcia"]
-    "institution": str | None, # e.g., "MIT" or "Stanford University"
-    "abstract": str,           # may be empty ""
-    "keywords": list[str],     # may be []
-    "venue": str,              # e.g., "NeurIPS", "ICML", "NIPS" (names may vary)
-    "year": int,
-    "publication_date": str    # ISO format "YYYY-MM-DD"
-}
+[
+    {
+        "paper_id": str,           # e.g., "paper_0001"
+        "title": str,
+        "authors": list[str],      # e.g., ["J. Smith", "Maria Garcia"]
+        "institution": str | None, # e.g., "MIT" or "Stanford University"
+        "abstract": str,           # may be empty ""
+        "keywords": list[str],     # may be []
+        "venue": str,              # e.g., "NeurIPS", "ICML", "NIPS" (names may vary)
+        "year": int,
+        "publication_date": str    # ISO format "YYYY-MM-DD"
+    },
+    ...
+]
 ```
 
-**`citations_raw`** (`pd.DataFrame`): Citation relationships with columns:
-- `citing_paper`: str (paper_id of the citing paper)
-- `cited_paper`: str (paper_id of the cited paper)
+2. **`citations.csv`** — Citation relationships with columns:
+   - `citing_paper`: str (paper_id of the citing paper)
+   - `cited_paper`: str (paper_id of the cited paper)
 
-**`affiliations_raw`** (`dict`): Reference data for entity resolution. Structure is a dict-of-dicts keyed by ID:
+3. **`author_affiliations.json`** — Reference data for entity resolution. Structure is a dict-of-dicts keyed by ID:
 ```python
 {
     "authors": {
@@ -95,7 +98,7 @@ The data contains edge cases you must handle:
    - Normalize to canonical forms
 
 6. **Conflicting affiliations**: Some papers list an author with an incorrect institution.
-   - Cross-reference with affiliations_raw to detect mismatches
+   - Cross-reference with author_affiliations.json to detect mismatches
 
 ---
 
@@ -103,13 +106,13 @@ The data contains edge cases you must handle:
 
 You are free to choose the order and decomposition, but your implementation must produce all of the following.
 
-### Data Variables
+### Data Variables (loaded from files)
 
 | Variable | Type | Description |
 |----------|------|-------------|
-| `papers_df` | `pd.DataFrame` | Papers data |
-| `citations_df` | `pd.DataFrame` | Citation relationships |
-| `affiliations_data` | `dict` | Author affiliations reference |
+| `papers_df` | `pd.DataFrame` | Loaded from `papers_metadata.json` |
+| `citations_df` | `pd.DataFrame` | Loaded from `citations.csv` |
+| `affiliations_data` | `dict` | Loaded from `author_affiliations.json` |
 
 ### Entity Variables
 
@@ -278,33 +281,47 @@ Must have this structure:
 }
 ```
 
+### Artifact Generation
+
+You MUST save the final report to disk:
+
+```python
+import os
+with open(os.path.join(DATA_DIR, "final_report.json"), "w") as f:
+    json.dump(final_report, f, indent=2, default=str)
+```
+
 ---
 
 ## Constraints
 
-1. Do not hardcode specific paper IDs, author names, or institution names
-2. Entity resolution must use institution context for disambiguation -- "J. Smith" at MIT != "J. Smith" at Oxford
-3. Typo handling must use fuzzy matching (e.g., Levenshtein distance)
-4. PageRank with damping factor 0.85
-5. Citation rings require cycle detection in the citation graph
-6. Temporal anomalies require comparing publication years
-7. All intermediate variables must be inspectable
-8. Handle edge cases gracefully
+1. Load all data from files using DATA_DIR — do not assume data is pre-loaded
+2. Do not hardcode specific paper IDs, author names, or institution names
+3. Entity resolution must use institution context for disambiguation — "J. Smith" at MIT != "J. Smith" at Oxford
+4. Typo handling must use fuzzy matching (e.g., Levenshtein distance)
+5. PageRank with damping factor 0.85
+6. Citation rings require cycle detection in the citation graph
+7. Temporal anomalies require comparing publication years
+8. All intermediate variables must be inspectable
+9. Handle edge cases gracefully
+10. Save final_report.json to DATA_DIR as an artifact
 
 ---
 
 ## Success Criteria
 
 1. All validation checks pass
-2. Entity resolution correctly disambiguates "J. Smith" at different institutions as different people
-3. Citation rings are detected (at least one ring of 5 papers)
-4. Temporal anomalies are detected (at least one)
-5. Typos are corrected with fuzzy matching
-6. Venue names are normalized (NIPS -> NeurIPS)
-7. Affiliation conflicts are identified
-8. PageRank scores sum to ~1.0
-9. Final report follows the exact schema
-10. All numeric values are finite
+2. Data loaded from files (not hardcoded)
+3. Entity resolution correctly disambiguates "J. Smith" at different institutions as different people
+4. Citation rings are detected (at least one ring of 5 papers)
+5. Temporal anomalies are detected (at least one)
+6. Typos are corrected with fuzzy matching
+7. Venue names are normalized (NIPS -> NeurIPS)
+8. Affiliation conflicts are identified
+9. PageRank scores sum to ~1.0
+10. Final report follows the exact schema
+11. final_report.json saved to disk
+12. All numeric values are finite
 
 ---
 
@@ -316,7 +333,7 @@ Your code MUST define these variables (tests will fail if missing):
 # Citation ring detection
 citation_ring_papers: list[str] = [...]
 
-# Temporal anomalies -- citations where citing_year < cited_year
+# Temporal anomalies — citations where citing_year < cited_year
 temporal_anomalies: list[dict] = [
     {'citing_paper': 'paper_X', 'cited_paper': 'paper_Y', 'citing_year': 2021, 'cited_year': 2023},
 ]
@@ -336,14 +353,11 @@ typo_corrections: list[dict] = [
 - Citation rings: `networkx.simple_cycles()` on the citation graph
 - Temporal anomalies: if citing_year < cited_year, it's anomalous
 - Ambiguous authors: "J. Smith" at MIT vs "J. Smith" at Oxford are different people
-- Typos: fuzzy matching (Levenshtein distance) -- "Jonh Smith" -> "John Smith"
+- Typos: fuzzy matching (Levenshtein distance) — "Jonh Smith" -> "John Smith"
 
 ---
 
 ## Output Format
 
-```python
-import json
-```
-
+Your code must produce all required variables listed above. Wrap your solution in a single ```python ... ``` code block.
 """

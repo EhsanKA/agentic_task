@@ -1,5 +1,8 @@
 """Pipeline orchestrator: runs the full golden solution end-to-end."""
 
+import json
+import os
+
 import pandas as pd
 
 from benchmark.pipeline.resolution import build_resolution_maps, build_venue_normalizations
@@ -13,6 +16,7 @@ def run_pipeline(
     papers_raw: list,
     citations_raw: pd.DataFrame,
     affiliations_raw: dict,
+    data_dir: str | None = None,
 ) -> dict:
     """Execute the full entity extraction and citation analysis pipeline.
 
@@ -67,6 +71,13 @@ def run_pipeline(
         entities["ambiguous_author_resolutions"], typo_corrections,
         entities["affiliation_conflicts"], summary_stats, validation_results,
     )
+
+    # Save artifact
+    if data_dir:
+        report_path = os.path.join(data_dir, "final_report.json")
+        with open(report_path, "w") as f:
+            json.dump(final_report, f, indent=2, default=str)
+        print(f"Saved final_report.json to {report_path}")
 
     return {
         # Data
