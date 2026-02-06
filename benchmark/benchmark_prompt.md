@@ -10,19 +10,61 @@ You are a data scientist tasked with building an automated pipeline for analyzin
 
 ## Context
 
-You have access to three data files:
+You have access to three data sources (already loaded in memory):
 
-1. **`papers_metadata.json`** - Contains metadata for ~100 research papers including titles, abstracts, authors, institutions, keywords, venues, and publication dates.
+### Input Data Structures
 
-2. **`citations.csv`** - Contains citation relationships between papers (which paper cites which).
+**`papers_raw`** (`list[dict]`): List of ~100 paper records. Each paper dict has this schema:
+```python
+{
+    "paper_id": str,           # e.g., "paper_0001"
+    "title": str,
+    "authors": list[str],      # e.g., ["J. Smith", "Maria Garcia"]
+    "institution": str | None, # e.g., "MIT" or "Stanford University"
+    "abstract": str,           # May be empty string ""
+    "keywords": list[str],     # e.g., ["machine learning", "neural networks"], may be []
+    "venue": str,              # e.g., "NeurIPS", "ICML"
+    "year": int,
+    "publication_date": str    # ISO format "YYYY-MM-DD"
+}
+```
 
-3. **`author_affiliations.json`** - Contains reference data about known authors and institutions with some of their name variations.
+**`citations_raw`** (`pd.DataFrame`): Citation relationships with columns:
+- `citing_paper`: str (paper_id of the paper doing the citing)
+- `cited_paper`: str (paper_id of the paper being cited)
 
-The data contains intentional challenges:
-- Author names appear in different formats (e.g., "John Smith" vs "J. Smith" vs "Smith, John")
-- Institution names have variations (e.g., "MIT" vs "Massachusetts Institute of Technology")
-- Some papers have missing fields
-- The citation data may contain anomalies (orphan references, self-citations)
+**`affiliations_raw`** (`dict`): Reference data for entity resolution. **Structure is a dict-of-dicts keyed by ID**:
+```python
+{
+    "authors": {
+        "auth_001": {
+            "canonical_name": str,       # e.g., "John Smith"
+            "known_variations": list[str], # e.g., ["J. Smith", "John A. Smith"]
+            "primary_institution": str   # Institution ID, e.g., "inst_001"
+        },
+        "auth_002": { ... },
+        # ... more authors keyed by auth_XXX
+    },
+    "institutions": {
+        "inst_001": {
+            "canonical_name": str,       # e.g., "Massachusetts Institute of Technology"
+            "known_variations": list[str], # e.g., ["MIT", "M.I.T."]
+            "country": str
+        },
+        "inst_002": { ... },
+        # ... more institutions keyed by inst_XXX
+    }
+}
+```
+
+### Data Challenges (Intentional)
+
+The data contains edge cases you must handle:
+- **Author name variations**: Same person appears as "John Smith", "J. Smith", "Smith, John"
+- **Institution name variations**: Same institution appears as "MIT", "Massachusetts Institute of Technology"
+- **Missing fields**: Some papers have empty abstract (`""`) or empty keywords (`[]`)
+- **Orphan citations**: Some citations reference paper_ids that don't exist in papers_raw
+- **Self-citations**: Some papers cite themselves
 
 ---
 
